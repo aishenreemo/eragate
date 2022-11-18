@@ -1,0 +1,19 @@
+{
+  "name": "eragate",
+  "version": "0.1",
+  "repository": "https://github.com/aishenreemo/eragate.git",
+  "author": "Aivan <aish3n@pm.me>",
+  "license": "MIT",
+  "scripts": {
+    "start:prod": "yarn build && yarn prod",
+    "start": "ts-node src/index.ts",
+    "dev": "ts-node-dev src/index.ts",
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^4.9.3"
+  }
+}
