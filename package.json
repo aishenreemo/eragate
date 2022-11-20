@@ -5,15 +5,11 @@
   "author": "Aivan <aish3n@pm.me>",
   "license": "MIT",
   "scripts": {
-    "start:prod": "yarn build && yarn prod",
-    "start": "ts-node src/index.ts",
-    "dev": "ts-node-dev src/index.ts",
+    "start": "yarn build && node dist/index.js",
     "build": "tsc",
     "watch": "tsc -w"
   },
   "devDependencies": {
-    "ts-node": "^10.9.1",
-    "ts-node-dev": "^2.0.0",
     "typescript": "^4.9.3"
   },
   "dependencies": {
