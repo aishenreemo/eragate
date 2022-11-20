@@ -1,3 +1,4 @@
+import * as command from "./structs/command";
 import * as client from "./structs/client";
 
 import discord from "discord.js";
@@ -20,19 +21,21 @@ async function onReady() {
     console.log("Bot is up and running!");
     console.log("Loading commands...");
 
-    let body = [];
     let files = await readFiles("commands", []);
 
-    for (let i = 0; i < files.length; i++) {
-        let cmd = files[i];
+    let commandBody = [];
+    let commandFiles: command.EragateCommand[] = files.filter(f => !!f.execute && !!f.data);
+
+    for (let i = 0; i < commandFiles.length; i++) {
+        let cmd = commandFiles[i];
 
         bot.commands.set(cmd.data.name, cmd.execute);
-        body.push(cmd.data.toJSON());
+        commandBody.push(cmd.data.toJSON());
 
         console.log(`- Loading "${cmd.data.name}" command...`);
     }
 
-    await bot.rest.put(discord.Routes.applicationCommands(bot.user.id), { body });
+    await bot.rest.put(discord.Routes.applicationCommands(bot.user.id), { body: commandBody });
     console.log(`Successfully loaded application (/) commands.`);
 }
 
@@ -46,7 +49,6 @@ async function onInteractionCreate(interaction: discord.Interaction) {
 async function readFiles(query: String, out: Array<any>): Promise<Array<any>> {
     let files = await fs.readdir(path.resolve(`./dist/${query}`));
     let resolveFile = (exportedFile: any) => {
-        if (!exportedFile.data || !exportedFile.execute) return;
         out.push(exportedFile);
     };
 
