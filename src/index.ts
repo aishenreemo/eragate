@@ -1,5 +1,6 @@
 import * as command from "./structs/command";
 import * as client from "./structs/client";
+import * as mongodb from "mongodb";
 
 import discord from "discord.js";
 import fs from "fs/promises";
@@ -9,15 +10,24 @@ import path from "path";
 dotenv.config();
 
 const intents = [discord.GatewayIntentBits.Guilds];
-const bot = new client.EragateClient(intents, process.env.ERAGATE_TOKEN);
+const bot = new client.EragateClient(intents);
+const dbopts = { useNewUrlParser: true, useUnifiedTopology: true } as mongodb.MongoClientOptions;
+const dbclient = new mongodb.MongoClient(bot.mongoURI, dbopts);
 
 function main() {
-    bot.on(discord.Events.InteractionCreate, onInteractionCreate);
-    bot.on(discord.Events.ClientReady, onReady);
+    dbclient.connect().then(onDatabaseReady).catch(console.error);
+
+    bot.on(discord.Events.InteractionCreate, onDiscordInteractionCreate);
+    bot.on(discord.Events.ClientReady, onDiscordClientReady);
     bot._login();
 }
 
-async function onReady() {
+function onDatabaseReady() {
+    console.log("Database is up and running");
+    dbclient.db("main").collection("test").insertOne({ foo: "bar" });
+}
+
+async function onDiscordClientReady() {
     console.log("Bot is up and running!");
     console.log("Loading commands...");
 
@@ -39,7 +49,7 @@ async function onReady() {
     console.log(`Successfully loaded application (/) commands.`);
 }
 
-async function onInteractionCreate(interaction: discord.Interaction) {
+async function onDiscordInteractionCreate(interaction: discord.Interaction) {
     if (!interaction.isChatInputCommand()) return;
 
     let cmdExecuteFn = bot.commands.get(interaction.commandName);
