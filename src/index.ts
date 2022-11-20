@@ -8,13 +8,12 @@ import path from "path";
 dotenv.config();
 
 const intents = [discord.GatewayIntentBits.Guilds];
-const bot = new client.EragateClient(intents);
-const rest = new discord.REST({ version: '10' }).setToken(process.env.ERAGATE_TOKEN);
+const bot = new client.EragateClient(intents, process.env.ERAGATE_TOKEN);
 
 function main() {
-    bot.on(discord.Events.ClientReady, onReady);
     bot.on(discord.Events.InteractionCreate, onInteractionCreate);
-    bot.login(process.env.ERAGATE_TOKEN);
+    bot.on(discord.Events.ClientReady, onReady);
+    bot._login();
 }
 
 async function onReady() {
@@ -33,7 +32,7 @@ async function onReady() {
         console.log(`- Loading "${cmd.data.name}" command...`);
     }
 
-    await rest.put(discord.Routes.applicationCommands(bot.user.id), { body });
+    await bot.rest.put(discord.Routes.applicationCommands(bot.user.id), { body });
     console.log(`Successfully loaded application (/) commands.`);
 }
 
