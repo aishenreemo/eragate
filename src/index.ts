@@ -48,9 +48,7 @@ async function onDiscordInteractionCreate(interaction: discord.Interaction) {
 
 async function readFiles(query: String, out: Array<any>): Promise<Array<any>> {
     let files = await fs.readdir(path.resolve(`./dist/${query}`));
-    let resolveFile = (exportedFile: any) => {
-        out.push(exportedFile);
-    };
+    let resolveFile = (exportedFile: any) => out.push(exportedFile);
 
     for (let i = 0; i < files.length; i++) {
         let file = files[i];
