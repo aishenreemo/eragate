@@ -24,7 +24,6 @@ function main() {
 
 function onDatabaseReady() {
     console.log("Database is up and running");
-    dbclient.db("main").collection("test").insertOne({ foo: "bar" });
 }
 
 async function onDiscordClientReady() {
@@ -53,7 +52,7 @@ async function onDiscordInteractionCreate(interaction: discord.Interaction) {
     if (!interaction.isChatInputCommand()) return;
 
     let cmdExecuteFn = bot.commands.get(interaction.commandName);
-    if (cmdExecuteFn) cmdExecuteFn(bot, interaction);
+    if (cmdExecuteFn) cmdExecuteFn(bot, interaction, dbclient);
 }
 
 async function readFiles(query: String, out: Array<any>): Promise<Array<any>> {
