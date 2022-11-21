@@ -30,29 +30,20 @@ async function onDiscordClientReady() {
     console.log("Bot is up and running!");
     console.log("Loading commands...");
 
-    let files = await readFiles("commands", []);
-
-    let commandBody = [];
-    let commandFiles: command.EragateCommand[] = files.filter(f => !!f.execute && !!f.data);
-
-    for (let i = 0; i < commandFiles.length; i++) {
-        let cmd = commandFiles[i];
-
-        bot.commands.set(cmd.data.name, cmd.execute);
-        commandBody.push(cmd.data.toJSON());
-
-        console.log(`- Loading "${cmd.data.name}" command...`);
-    }
-
-    await bot.rest.put(discord.Routes.applicationCommands(bot.user.id), { body: commandBody });
-    console.log(`Successfully loaded application (/) commands.`);
+    await reloadCommands();
 }
 
 async function onDiscordInteractionCreate(interaction: discord.Interaction) {
     if (!interaction.isChatInputCommand()) return;
 
-    let cmdExecuteFn = bot.commands.get(interaction.commandName);
-    if (cmdExecuteFn) cmdExecuteFn(bot, interaction, dbclient);
+    if (interaction.options.getSubcommand(false) == null) {
+        let cmdExecuteFn = bot.commands.get(interaction.commandName);
+        if (cmdExecuteFn) cmdExecuteFn(bot, interaction, dbclient);
+    } else {
+        let subCommandName = interaction.options.getSubcommand();
+        let cmdExecuteFn = bot.commands.get(`${interaction.commandName}_${subCommandName}`);
+        if (cmdExecuteFn) cmdExecuteFn(bot, interaction, dbclient);
+    }
 }
 
 async function readFiles(query: String, out: Array<any>): Promise<Array<any>> {
@@ -72,6 +63,88 @@ async function readFiles(query: String, out: Array<any>): Promise<Array<any>> {
     }
 
     return out;
+}
+
+async function reloadCommands() {
+    let files = await readFiles("commands", []);
+
+    let commandBody: discord.RESTPostAPIChatInputApplicationCommandsJSONBody[] = [];
+    let commandFiles: command.EragateCommand[] = files.filter(f => !!f.data);
+
+    let subCommands: command.EragateSubCommand[] = [];
+    let parentCommands: command.EragateParentCommand[] = [];
+    let normalCommands: command.EragateCommand[] = [];
+
+    for (let i = 0; i < commandFiles.length; i++) {
+        let cmd = commandFiles[i];
+        let isNormal = true;
+
+        if (!!cmd.parent && !!cmd.execute && !cmd.subcommands) {
+            subCommands.push(cmd as command.EragateSubCommand);
+            isNormal = false;
+        }
+
+        if (!!cmd.subcommands && !cmd.execute && !cmd.parent) {
+            parentCommands.push(cmd as command.EragateParentCommand);
+            isNormal = false;
+        }
+
+        if (isNormal) normalCommands.push(cmd);
+    }
+
+    for (let i = 0; i < parentCommands.length; i++) {
+        let pcmd = parentCommands[i];
+
+        console.log(`- Loading "${pcmd.data.name}" command...`);
+
+        for (let j = 0; j < pcmd.subcommands.length; j++) {
+            let subCommandName = pcmd.subcommands[j];
+
+            for (let k = 0; k < subCommands.length; k++) {
+                let subCommand = subCommands[k];
+                let subCommandJSON = subCommand.data.toJSON();
+
+                if (subCommandJSON.name != subCommandName) continue;
+
+                console.log(`-- Loading "${subCommandJSON.name}" command...`);
+
+                bot.commands.set(`${pcmd.data.name}_${subCommandJSON.name}`, subCommand.execute);
+                pcmd.data.addSubcommand(loadSubCommand(subCommandJSON));
+                subCommands.splice(k, 1);
+                break;
+            }
+        }
+
+        console.log(pcmd.data.toJSON());
+        commandBody.push(pcmd.data.toJSON());
+    }
+
+    for (let i = 0; i < normalCommands.length; i++) {
+        let cmd = normalCommands[i];
+
+        console.log(`- Loading "${cmd.data.name}" command...`);
+
+        if (!cmd.execute) continue;
+
+        bot.commands.set(cmd.data.name, cmd.execute);
+        commandBody.push(cmd.data.toJSON());
+        console.log(cmd.data.toJSON());
+    }
+
+    if (!bot.user) return;
+
+    await bot.rest.put(discord.Routes.applicationCommands(bot.user.id), { body: commandBody });
+    console.log(`Successfully loaded application (/) commands.`);
+}
+
+function loadSubCommand(json: discord.RESTPostAPIChatInputApplicationCommandsJSONBody) {
+    return (s: discord.SlashCommandSubcommandBuilder) => {
+        s.setName(json.name);
+        s.setDescription(json.description);
+        s.setNameLocalizations(json.name_localizations || {});
+        s.setDescriptionLocalizations(json.description_localizations || {});
+        return s;
+    }
 }
 
 main();
