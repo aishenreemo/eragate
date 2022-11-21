@@ -1,11 +1,16 @@
 import * as client from "../../structs/client";
+import * as mongodb from "mongodb";
 import discord from "discord.js";
 
 export const data = new discord.SlashCommandBuilder()
     .setName("ping")
     .setDescription("check my latency");
 
-export async function execute(bot: client.EragateClient, interaction: discord.Interaction) {
+export async function execute(
+    bot: client.EragateClient,
+    interaction: discord.Interaction,
+    _dbclient: mongodb.MongoClient
+) {
     let embed = new discord.EmbedBuilder()
         .setTitle("Pong!")
         .setDescription(`Latency: ${Date.now() - interaction.createdTimestamp}ms\n`
