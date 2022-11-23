@@ -19,7 +19,7 @@ export interface EragateParentCommand {
 }
 
 export interface EragateSubCommand {
-    data: discord.SlashCommandBuilder;
+    data: discord.SlashCommandSubcommandBuilder;
     execute: (
         bot: client.EragateClient,
         interaction: discord.Interaction,

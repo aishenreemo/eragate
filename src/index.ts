@@ -78,7 +78,7 @@ async function reloadCommands() {
         let isNormal = true;
 
         if (!!cmd.parent && !!cmd.execute && !cmd.subcommands) {
-            subCommands.push(cmd as command.EragateSubCommand);
+            subCommands.push(cmd as unknown as command.EragateSubCommand);
             isNormal = false;
         }
 
@@ -107,7 +107,7 @@ async function reloadCommands() {
                 console.log(`-- Loading "${subCommandJSON.name}" command...`);
 
                 bot.commands.set(`${pcmd.data.name}_${subCommandJSON.name}`, subCommand.execute);
-                pcmd.data.addSubcommand(loadSubCommand(subCommandJSON));
+                pcmd.data.addSubcommand(() => subCommand.data);
                 subCommands.splice(k, 1);
                 break;
             }
@@ -133,16 +133,6 @@ async function reloadCommands() {
 
     await bot.rest.put(discord.Routes.applicationCommands(bot.user.id), { body: commandBody });
     console.log(`Successfully loaded application (/) commands.`);
-}
-
-function loadSubCommand(json: discord.RESTPostAPIChatInputApplicationCommandsJSONBody) {
-    return (s: discord.SlashCommandSubcommandBuilder) => {
-        s.setName(json.name);
-        s.setDescription(json.description);
-        s.setNameLocalizations(json.name_localizations || {});
-        s.setDescriptionLocalizations(json.description_localizations || {});
-        return s;
-    }
 }
 
 main();
